@@ -6,7 +6,7 @@ Este repositório contém a aplicação web desenvolvida em Flask para gerenciam
 * **Arthur Ignacio Delia** 
 * **Gustavo Campos** 
 * **Pedro Guedes** 
-* **Gustavo Campos** 
+* **Rafael Fernandes** 
 
 
 ## Diagrama de Entidade-Relacionamento (DER)
