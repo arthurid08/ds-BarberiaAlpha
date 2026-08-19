@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Agendamento - Barbearia</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Agende seu Horário</h2>
+        <form action="/confirmar" method="POST">
+            <label for="nome">Nome Completo:</label>
+            <input type="text" id="nome" name="nome" required>
+
+            <label for="telefone">Telefone / WhatsApp:</label>
+            <input type="tel" id="telefone" name="telefone" required>
+
+            <label for="servico">Serviço Desejado:</label>
+            <select id="servico" name="servico" required>
+                <option value="Corte de Cabelo">Corte de Cabelo (R$ 50,00)</option>
+                <option value="Barba Completa">Barba Completa (R$ 40,00)</option>
+                <option value="Combo Corte + Barba">Combo Corte + Barba (R$ 80,00)</option>
+            </select>
+
+            <label for="barbeiro">Barbeiro de Preferência:</label>
+            <select id="barbeiro" name="barbeiro" required>
+                <option value="Carlos Silva">Carlos Silva</option>
+                <option value="Mateus Santos">Mateus Santos</option>
+                <option value="Sem preferência">Qualquer Barbeiro</option>
+            </select>
+
+            <label for="data">Data:</label>
+            <input type="date" id="data" name="data" required>
+
+            <label for="hora">Horário:</label>
+            <input type="time" id="hora" name="hora" required>
+
+            <button type="submit">Confirmar Agendamento</button>
+        </form>
+    </div>
+</body>
+</html>
