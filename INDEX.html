@@ -41,10 +41,31 @@
         <!-- Form de Novo Agendamento -->
         <section class="form-section">
             <h2>Novo Agendamento</h2>
-            <form action="{{ url_for('cadastrar') }}" method="POST" class="form-inline">
-                <input type="text" name="cliente" placeholder="Nome do Cliente">
-                <input type="text" name="servico" placeholder="Serviço (ex: Corte, Barba)">
-                <input type="number" step="0.01" name="preco" placeholder="Preço (R$)">
+            <form action="{{ url_for('agendamentos.criar') }}" method="POST" class="form-inline">
+                <select name="id_cliente" required>
+                    <option value="" disabled selected>Cliente</option>
+                    {% for c in clientes %}
+                        <option value="{{ c.id_cliente }}">{{ c.nome }} - {{ c.telefone }}{% if c.email %} ({{ c.email }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="id_barbeiro" required>
+                    <option value="" disabled selected>Barbeiro</option>
+                    {% for b in barbeiros %}
+                        <option value="{{ b.id_barbeiro }}">{{ b.nome }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="id_do_servico" required>
+                    <option value="" disabled selected>Serviço</option>
+                    {% for s in servicos %}
+                        <option value="{{ s.id_do_servico }}">{{ s.nome_do_servico }} (R$ {{ "%.2f"|format(s.preco) }})</option>
+                    {% endfor %}
+                </select>
+
+                <input type="date" name="data" required>
+                <input type="time" name="hora" required>
+
                 <button type="submit" class="btn btn-primary">Agendar</button>
             </form>
         </section>
@@ -53,11 +74,11 @@
         <section class="table-section">
             <div class="table-header">
                 <h2>Lista de Agendamentos</h2>
-                <form action="{{ url_for('index') }}" method="GET" class="search-form">
+                <form action="{{ url_for('agendamentos.listar') }}" method="GET" class="search-form">
                     <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar cliente ou serviço...">
                     <button type="submit" class="btn">Buscar</button>
                     {% if busca %}
-                        <a href="{{ url_for('index') }}" class="btn-clear">Limpar</a>
+                        <a href="{{ url_for('agendamentos.listar') }}" class="btn-clear">Limpar</a>
                     {% endif %}
                 </form>
             </div>
@@ -67,8 +88,12 @@
                     <tr>
                         <th>ID</th>
                         <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Barbeiro</th>
                         <th>Serviço</th>
-                        <th>Preço</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
                         <th>Status</th>
                         <th>Ação</th>
                     </tr>
@@ -76,29 +101,83 @@
                 <tbody>
                     {% for a in agendamentos %}
                     <tr>
-                        <td>#{{ a.id }}</td>
-                        <td>{{ a.cliente }}</td>
-                        <td>{{ a.servico }}</td>
-                        <td>R$ {{ "%.2f"|format(a.preco) }}</td>
+                        <td>#{{ a.id_do_agendamento }}</td>
+                        <td>{{ a.cliente.nome }}</td>
+                        <td>{{ a.cliente.telefone }}</td>
+                        <td>{{ a.cliente.email if a.cliente.email else '-' }}</td>
+                        <td>{{ a.barbeiro.nome }}</td>
+                        <td>{{ a.servico.nome_do_servico }}</td>
+                        <td>{{ a.data_hora }}</td>
+                        <td>R$ {{ "%.2f"|format(a.valor_total) }}</td>
                         <td>
-                            <span class="badge {{ 'badge-confirmado' if a.status == 'Confirmado' else 'badge-pendente' }}">
-                                {{ a.status }}
+                            <span class="badge {{ 'badge-confirmado' if a.status_pagamento == 'Confirmado' else 'badge-pendente' }}">
+                                {{ a.status_pagamento }}
                             </span>
                         </td>
-                        <td>
-                            <form action="{{ url_for('alterar_status', id_agendamento=a.id) }}" method="POST">
+                        <td style="display:flex; gap:6px;">
+                            <form action="{{ url_for('agendamentos.atualizar_status', id_agendamento=a.id_do_agendamento) }}" method="POST">
                                 <button type="submit" class="btn-status">Mudar Status</button>
+                            </form>
+                            <form action="{{ url_for('agendamentos.deletar', id_agendamento=a.id_do_agendamento) }}" method="POST" onsubmit="return confirm('Excluir este agendamento?');">
+                                <button type="submit" class="btn-status" style="border-color:#f87171; color:#f87171;">Excluir</button>
                             </form>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" style="text-align: center;">Nenhum agendamento encontrado.</td>
+                        <td colspan="10" style="text-align: center;">Nenhum agendamento encontrado.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </section>
     </div>
+
+    <!-- Form de Cadastro de Cliente -->
+    <section class="form-section">
+        <h2>Cadastrar Novo Cliente</h2>
+        <form action="{{ url_for('agendamentos.cadastrar_cliente') }}" method="POST" class="form-inline">
+            <input type="text" name="nome" placeholder="Nome do Cliente" required>
+            <input type="text" name="telefone" placeholder="Telefone / WhatsApp" required>
+            <input type="email" name="email" placeholder="E-mail (opcional)">
+            
+            <button type="submit" class="btn btn-primary">Cadastrar Cliente</button>
+        </form>
+    </section>
+
+    <!-- Excluir clientes cadastrados (linha 117 routes.py) -->
+<section class="table-section">
+    <h2>Clientes Cadastrados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>E-mail</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td>#{{ c.id_cliente }}</td>
+                <td>{{ c.nome }}</td>
+                <td>{{ c.telefone }}</td>
+                <td>{{ c.email if c.email else '-' }}</td>
+                <td>
+                    <form action="{{ url_for('agendamentos.deletar_cliente', id_cliente=c.id_cliente) }}" method="POST" onsubmit="return confirm('Tem certeza? Isso apagará o cliente e todos os agendamentos dele!');">
+                        <button type="submit" class="btn-status" style="border-color:#f87171; color:#f87171;">Excluir Cliente</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center;">Nenhum cliente cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
 </body>
 </html>

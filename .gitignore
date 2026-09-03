@@ -1,5 +1,14 @@
 __pycache__/
-*.pyc
+*.py[cod]
+$py.class
 .env
 venv/
+env/
+ENV/
+
+# Configurações do editor VS Code
 .vscode/
+
+#Banco de dadps local SQlite e pastas do flask
+*.db
+instance/
