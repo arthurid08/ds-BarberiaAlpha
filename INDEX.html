@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbearia Alpha - Painel de Agendamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <div>
+                    <h1>Barbearia Alpha</h1>
+                    <p>Agendamento Online</p>
+                </div>
+                <div class="user-info">
+                    {% if current_user.is_authenticated %}
+                        <span>Usuário: <strong>{{ current_user.username }}</strong> (Admin)</span> | 
+                        <a href="{{ url_for('agendamentos.logout') }}" style="color: #f87171; text-decoration: none; font-weight: bold;">Sair</a>
+                    {% else %}
+                        <a href="{{ url_for('agendamentos.login') }}" style="color: #f59e0b; text-decoration: none; font-weight: bold;">Área Admin</a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Seção de Indicadores Visível Apenas para Admin -->
+        {% if current_user.is_authenticated and current_user.tipo_acesso == 'admin' %}
+        <div class="cards-grid">
+            <div class="card">
+                <h3>Total Agendados</h3>
+                <p class="valor">{{ total_agendamentos }}</p>
+            </div>
+            <div class="card">
+                <h3>Confirmados vs Pendentes</h3>
+                <p class="valor">{{ confirmados }} / {{ pendentes }}</p>
+            </div>
+            <div class="card">
+                <h3>Faturamento Confirmado</h3>
+                <p class="valor">R$ {{ "%.2f"|format(faturamento_total) }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Formulário de Agendamento com Inputs Diretos -->
+        <section class="form-section">
+            <h2>Novo Agendamento</h2>
+            <form action="{{ url_for('agendamentos.criar') }}" method="POST" class="form-inline">
+                
+                <input type="text" name="nome_cliente" placeholder="Seu Nome Completo" required>
+                <input type="text" id="telefone" name="telefone_cliente" placeholder="Telefone / WhatsApp" maxlength="15" required>
+                <input type="email" name="email_cliente" placeholder="Seu E-mail (opcional)">
+
+                <select name="id_barbeiro" id="id_barbeiro" required>
+                    <option value="" disabled selected>Barbeiro</option>
+                    {% for b in barbeiros %}
+                        <option value="{{ b.id_barbeiro }}">{{ b.nome }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="id_do_servico" required>
+                    <option value="" disabled selected>Serviço</option>
+                    {% for s in servicos %}
+                        <option value="{{ s.id_do_servico }}">{{ s.nome_do_servico }} (R$ {{ "%.2f"|format(s.preco) }})</option>
+                    {% endfor %}
+                </select>
+
+                <input type="date" name="data" id="data_agendamento" required>
+                
+                <select name="hora" id="hora_agendamento" required>
+                    <option value="" disabled selected>Horário</option>
+                    {% for h in horarios_disponiveis %}
+                        <option value="{{ h }}">{{ h }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" class="btn btn-primary">Agendar</button>
+            </form>
+        </section>
+
+        <!-- Visão do Cliente: Exibe Apenas o Agendamento Recém-Criado na Sessão -->
+        {% if not current_user.is_authenticated and agendamento_sucesso %}
+        <section class="table-section">
+            <h2>Seu Agendamento Confirmado</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Barbeiro</th>
+                        <th>Serviço</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ agendamento_sucesso.cliente.nome }}</td>
+                        <td>{{ agendamento_sucesso.cliente.telefone }}</td>
+                        <td>{{ agendamento_sucesso.cliente.email if agendamento_sucesso.cliente.email else '-' }}</td>
+                        <td>{{ agendamento_sucesso.barbeiro.nome }}</td>
+                        <td>{{ agendamento_sucesso.servico.nome_do_servico }}</td>
+                        <td>{{ agendamento_sucesso.data_hora }}</td>
+                        <td>R$ {{ "%.2f"|format(agendamento_sucesso.valor_total) }}</td>
+                        <td>
+                            <span class="badge {{ 'badge-confirmado' if agendamento_sucesso.status_pagamento == 'Confirmado' else 'badge-pendente' }}">
+                                {{ agendamento_sucesso.status_pagamento }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+
+        <!-- Visão do Administrador: Lista Completa de Agendamentos e Controles -->
+        {% if current_user.is_authenticated and current_user.tipo_acesso == 'admin' %}
+        <section class="table-section">
+            <div class="table-header">
+                <h2>Lista Geral de Agendamentos</h2>
+                <form action="{{ url_for('agendamentos.listar') }}" method="GET" class="search-form">
+                    <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar cliente ou serviço...">
+                    <button type="submit" class="btn">Buscar</button>
+                    {% if busca %}
+                        <a href="{{ url_for('agendamentos.listar') }}" class="btn-clear">Limpar</a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Telefone</th>
+                        <th>E-mail</th>
+                        <th>Barbeiro</th>
+                        <th>Serviço</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in agendamentos %}
+                    <tr>
+                        <td>#{{ a.id_do_agendamento }}</td>
+                        <td>{{ a.cliente.nome }}</td>
+                        <td>{{ a.cliente.telefone }}</td>
+                        <td>{{ a.cliente.email if a.cliente.email else '-' }}</td>
+                        <td>{{ a.barbeiro.nome }}</td>
+                        <td>{{ a.servico.nome_do_servico }}</td>
+                        <td>{{ a.data_hora }}</td>
+                        <td>R$ {{ "%.2f"|format(a.valor_total) }}</td>
+                        <td>
+                            <span class="badge {{ 'badge-confirmado' if a.status_pagamento == 'Confirmado' else 'badge-pendente' }}">
+                                {{ a.status_pagamento }}
+                            </span>
+                        </td>
+                        <td style="display:flex; gap:6px;">
+                            <form action="{{ url_for('agendamentos.atualizar_status', id_agendamento=a.id_do_agendamento) }}" method="POST">
+                                <button type="submit" class="btn-status">Mudar Status</button>
+                            </form>
+                            <form action="{{ url_for('agendamentos.deletar', id_agendamento=a.id_do_agendamento) }}" method="POST" onsubmit="return confirm('Excluir este agendamento?');">
+                                <button type="submit" class="btn-status" style="border-color:#f87171; color:#f87171;">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" style="text-align: center;">Nenhum agendamento encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        {% endif %}
+    </div>
+
+    <!-- Máscara de Telefone e Script do AJAX -->
+   <!-- Máscara de Telefone e Script de Bloqueio de Horários -->
+<!-- Máscara de Telefone e Script de Bloqueio de Horários -->
+
+<script>
+    const inputTelefone = document.getElementById('telefone');
+    if (inputTelefone) {
+        inputTelefone.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 6) v = `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
+            else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+            else if (v.length > 0) v = `(${v}`;
+            e.target.value = v;
+        });
+    }
+
+    const inputData = document.getElementById('data_agendamento');
+    const selectBarbeiro = document.getElementById('id_barbeiro');
+    const selectHora = document.getElementById('hora_agendamento');
+
+    function atualizarHorariosDisponiveis() {
+        const data = inputData.value;
+        const idBarbeiro = selectBarbeiro.value;
+
+        // Se a data ou o barbeiro não estiverem preenchidos, restaura todos os horários
+        if (!data || !idBarbeiro) {
+            Array.from(selectHora.options).forEach(option => {
+                if (option.value !== "") {
+                    option.disabled = false;
+                    option.textContent = option.value;
+                }
+            });
+            return;
+        }
+
+        fetch(`/horarios-ocupados?data=${encodeURIComponent(data)}&id_barbeiro=${encodeURIComponent(idBarbeiro)}`)
+            .then(response => response.json())
+            .then(ocupados => {
+                Array.from(selectHora.options).forEach(option => {
+                    if (option.value === "") return;
+
+                    // Verifica se o horário está na lista de ocupados trazida do backend
+                    if (ocupados.includes(option.value)) {
+                        option.disabled = true;
+                        option.textContent = `${option.value} (Ocupado)`;
+                        if (selectHora.value === option.value) {
+                            selectHora.value = ""; // Limpa a seleção caso o horário escolhido esteja ocupado
+                        }
+                    } else {
+                        option.disabled = false;
+                        option.textContent = option.value;
+                    }
+                });
+            })
+            .catch(err => console.error("Erro ao verificar horários:", err));
+    }
+
+    if (inputData && selectBarbeiro) {
+        inputData.addEventListener('change', atualizarHorariosDisponiveis);
+        selectBarbeiro.addEventListener('change', atualizarHorariosDisponiveis);
+        
+        // Executa imediatamente se já houver valores preenchidos ao carregar a página
+        document.addEventListener('DOMContentLoaded', atualizarHorariosDisponiveis);
+    }
+    
+</script>
+</body>
+</html>

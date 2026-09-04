@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Painel Admin - Barbearia</title>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body { 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+        }
+
+        .login-card { 
+            background: #1e293b; 
+            padding: 30px; 
+            border-radius: 8px; 
+            border: 1px solid #334155; 
+            width: 100%; 
+            max-width: 400px; 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); 
+        }
+
+        .login-header { 
+            text-align: center; 
+            margin-bottom: 25px; 
+            border-bottom: 2px solid #334155; 
+            padding-bottom: 15px; 
+        }
+
+        .login-header h1 { 
+            color: #f59e0b; 
+            font-size: 1.8rem; 
+            margin-bottom: 5px; 
+        }
+
+        .login-header p { 
+            color: #94a3b8; 
+            font-size: 0.9rem; 
+            margin: 0;
+        }
+
+        .alert { 
+            padding: 12px 15px; 
+            margin-bottom: 20px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            background-color: #f87171; 
+            color: #7f1d1d; 
+        }
+
+        .form-group { 
+            margin-bottom: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 6px; 
+        }
+
+        .form-group label { 
+            color: #f8fafc; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+        }
+
+        input { 
+            padding: 10px; 
+            border: 1px solid #475569; 
+            border-radius: 5px; 
+            background: #0f172a; 
+            color: white; 
+            width: 100%; 
+        }
+
+        input:focus { 
+            outline: 1px solid #f59e0b; 
+        }
+
+        .btn-primary { 
+            padding: 12px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            background: #f59e0b; 
+            color: #0f172a; 
+            font-weight: bold; 
+            width: 100%; 
+            margin-top: 10px; 
+            font-size: 1rem; 
+            transition: background 0.2s; 
+            display: block;
+            text-align: center;
+        }
+
+        .btn-primary:hover { 
+            background: #d97706; 
+        }
+
+        .btn-secondary {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #334155;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-header">
+        <h1>Barbearia</h1>
+        <p>Acesso Restrito ao Administrador</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('agendamentos.login') }}" method="POST">
+        <input type="hidden" name="tipo_acesso" value="admin">
+
+        <div class="form-group">
+            <label for="username">Usuário</label>
+            <input type="text" id="username" name="username" required placeholder="Digite o usuário admin">
+        </div>
+
+        <div class="form-group">
+            <label for="senha">Senha</label>
+            <input type="password" id="senha" name="senha" required placeholder="Digite sua senha">
+        </div>
+
+        <button type="submit" class="btn-primary">Entrar no Painel</button>
+    </form>
+
+    <a href="{{ url_for('agendamentos.listar') }}" class="btn-secondary">
+        Continuar como Cliente (Agendar Horário)
+    </a>
+</div>
+
+</body>
+</html>
