@@ -65,15 +65,61 @@ Os Requisitos Não Funcionais definem os aspectos de qualidade, segurança, usab
 * `routes.py` — Blueprint com as rotas e regras de negócio (CRUD + filtro).
 * `app.py` — ponto de entrada: configuração e inicialização do servidor.
 
+## Mapeamento e Estratégia de Cache
+Tela / Função Otimizada: Consulta do Catálogo de Serviços (/) e Horários Ocupados (/horarios-ocupados).
+
+Tecnologia Utilizada: Redis em memória.
+
+Justificativa Técnica: As listagens de serviços da barbearia (ex: "Corte Masculino", "Barba Completa") possuem baixa frequência de alteração no banco de dados. Ao armazenar esses dados em cache (Redis), reduz-se drasticamente o tempo de resposta da rota pública e evita-se a execução de consultas repetidas ao banco de dados relacional (SQLite) a cada carregamento da página por múltiplos clientes simultâneos.
+
 
 ## Como rodar
-
-```
 pip install flask flask_sqlalchemy
 python app.py
 pip install flask-login
+pip install redis flask-caching celery
+
 
 O banco `barbearia.db` é criado automaticamente na primeira execução (não é versionado — veja `.gitignore`).
 
+## Mapeamento dos Padrões de Comunicação
+
+Fluxo 1 — Comunicação Síncrona (API REST)
+
+Funcionalidade: Validação de Autenticação do Administrador (/login).  
+
+Tipo de Comunicação: HTTP/REST (Síncrono).  
+
+Descrição do Fluxo: O usuário preenche as credenciais no formulário e envia uma requisição POST para a rota /login.
+
+A aplicação consulta de imediato o banco de dados via SQLAlchemy para verificar o nome de usuário e a senha.  
+
+A requisição permanece em aguardo ativo até o processamento.  
+
+O servidor devolve a resposta HTTP síncrona: autorizando o acesso e redirecionando para a listagem restrita ou emitindo um alerta de erro de autenticação na tela.
+
+
+Fluxo 2 — Comunicação Assíncrona (Filas / Mensageria)
+
+Funcionalidade: Disparo de Notificação de Confirmação de Agendamento.  
+
+Tipo de Comunicação: Orientada a Eventos / Fila de Mensagens (AMQP / RabbitMQ ou Celery).  
+
+Descrição do Fluxo:O cliente conclui o agendamento no formulário web enviando uma requisição para a rota /criar. 
+
+O backend valida a disponibilidade de horário e persiste o registro no banco de dados de forma imediata.  
+
+Após a gravação, o sistema publica uma mensagem no barramento/fila referente ao evento "Quando o agendamento é realizado" contendo as informações da reserva. 
+
+O cliente recebe a confirmação na interface imediatamente sem aguardar o envio externo. 
+
+Em segundo plano, um worker consome a mensagem da fila e envia as notificações de confirmação (e-mail/WhatsApp) para o cliente e para o barbeiro responsável de maneira desacoplada.
+
+
+## API Getaway
+
+API Gateway: O API Gateway atuará como ponto único de entrada (Reverse Proxy/Router) interceptando todas as requisições oriundas do Navegador/Web App do cliente. Ele roteia chamadas de busca de horários para rotas públicas e requisições de administração para as rotas autenticadas (/login, /atualizar-status, /deletar) do backend Flask.
+
+Estratégia de Cache: Tela/Função: Consulta do Catálogo de Serviços (rota /) e Verificação de Horários Ocupados (rota /horarios-ocupados).  Tecnologia: Redis em memória.  Justificativa: Os serviços oferecidos (ex: "Corte Masculino", "Barba Completa") e seus preços mudam com raríssima frequência. Além disso, a rota /horarios-ocupados é consultada via requisições AJAX assíncronas no frontend sempre que o usuário seleciona um barbeiro ou data. Armazenar as respostas desses dados em cache evita consultas repetidas ao banco de dados SQLite (barbearia.db), reduz o tempo de resposta da página pública e evita sobrecarga no servidor.
 
 

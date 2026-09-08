@@ -3,8 +3,26 @@ from database import db
 from models import Usuario, Cliente, Barbeiro, Servico, Agendamento
 from routes import agendamentos_bp
 from flask_login import LoginManager
+from flask_caching import Cache  # IMPORTADO
 
 app = Flask(__name__)
+
+# Configurações do app
+ app.config['SECRET_KEY'] = 'chave_secreta_barbearia'
+  app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///barbearia.db'
+   app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configuração do Cache (Redis)
+   app.config['CACHE_TYPE'] = 'RedisCache'
+  app.config['CACHE_REDIS_HOST'] = 'localhost'
+ app.config['CACHE_REDIS_PORT'] = 6379
+ app.config['CACHE_DEFAULT_TIMEOUT'] = 300  
+
+cache = Cache(app)
+app.extensions['cache'] = cache  # Disponibiliza o cache na aplicação
+
+# Inicialização do Banco de Dados
+db.init_app(app)
 
 # Configurações do app
 app.config['SECRET_KEY'] = 'chave_secreta_barbearia'
@@ -15,11 +33,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # Configuração do Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'agendamentos.login'
-login_manager.login_message = "Por favor, faça login para acessar esta página."
-login_manager.login_message_category = "warning"
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'agendamentos.login'
+    login_manager.login_message = "Por favor, faça login para acessar esta página."
+    login_manager.login_message_category = "warning"
 
 @login_manager.user_loader
 def load_user(user_id):

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from database import db
 from models import Agendamento, Cliente, Barbeiro, Servico, Usuario
 from flask_login import login_user, logout_user, login_required, current_user
+from flask import current_app
 
 agendamentos_bp = Blueprint('agendamentos', __name__)
 
@@ -185,3 +186,35 @@ def deletar(id_agendamento):
 
     flash("Agendamento removido da lista! O faturamento foi mantido.", "info")
     return redirect(url_for('agendamentos.listar'))
+
+    # ... (outros imports)
+
+@agendamentos_bp.route('/horarios-ocupados', methods=['GET'])
+def horarios_ocupados():
+    cache = current_app.extensions.get('cache')
+    data = request.args.get('data', '').strip()
+    id_barbeiro = request.args.get('id_barbeiro', '').strip()
+
+    if not data or not id_barbeiro:
+        return jsonify([])
+
+    # Chave de cache baseada na data e no barbeiro
+    cache_key = f"horarios_{id_barbeiro}_{data}"
+    if cache:
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return jsonify(cached_data)
+
+    agendamentos = Agendamento.query.filter(
+        Agendamento.id_barbeiro == int(id_barbeiro),
+        Agendamento.data_hora.like(f"{data}%"),
+        Agendamento.ativo == True
+    ).all()
+
+    ocupados = [a.data_hora.split(' ')[1].strip() for a in agendamentos if len(a.data_hora.split(' ')) > 1]
+
+    if cache:
+        cache.set(cache_key, ocupados, timeout=60) 
+    return jsonify(ocupados)
+
+
