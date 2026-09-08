@@ -18,7 +18,7 @@ Ao nosso ver, o padrão monolítico se adequa de forma mais eficaz à nossa equi
 
 
 ## Diagrama de Entidade-Relacionamento (DER)
-[Diagrama do Banco de Dados](docs/der.png)
+[Diagrama do Banco de Dados](der.png)
 
 
 ## Mapeamento de Evento (Arquitetura Orientada a Eventos)
