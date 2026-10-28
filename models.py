@@ -10,6 +10,7 @@ class Usuario(UserMixin, db.Model):
     telefone = db.Column(db.String(20), nullable=True)
     senha = db.Column(db.String(255), nullable=False)
     tipo_acesso = db.Column(db.String(20), nullable=False, default='cliente')
+    foto = db.Column(db.String(255), nullable=False, default='padrao.png') # Nova coluna para a foto
 
     cliente = db.relationship('Cliente', backref='usuario', uselist=False)
 

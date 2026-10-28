@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from database import db
 from models import Usuario, Cliente, Barbeiro, Servico, Agendamento
@@ -11,6 +12,13 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'chave_secreta_barbearia'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///barbearia.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configuração do diretório de uploads
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Garante que a pasta static/uploads exista
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Inicialização do Banco de Dados
 db.init_app(app)
